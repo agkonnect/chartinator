@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { Zap, ChevronDown } from 'lucide-react';
-import { getSupabaseClient } from '@/lib/supabase-client';
 
 const PLACEHOLDERS = [
   'Moving average that turns blue on uptrend, red on downtrend...',
@@ -128,17 +127,9 @@ export default function GeneratorForm({
     onLoading(true);
 
     try {
-      // Get fresh token on each request to avoid staleness
-      const supabase = getSupabaseClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const freshToken = session?.access_token;
-
       const res = await fetch('/api/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(freshToken ? { 'Authorization': `Bearer ${freshToken}` } : {}),
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: prompt.trim(), indicatorType, timeframe }),
       });
 
