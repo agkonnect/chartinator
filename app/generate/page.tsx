@@ -47,6 +47,14 @@ export default function GeneratePage() {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [userId, setUserId] = useState<string | undefined>(undefined);
   const supabase = getSupabaseClient();
+  // Dynamic browser tab title
+  useEffect(() => {
+    document.title = result?.indicatorName
+      ? result.indicatorName + '.mq5 — Chartinator'
+      : 'Generate — Chartinator';
+    return () => { document.title = 'Chartinator — AI-Powered MT5 Indicator Generator'; };
+  }, [result]);
+
 
   // Load usage on mount
   const loadUsage = useCallback(async () => {
