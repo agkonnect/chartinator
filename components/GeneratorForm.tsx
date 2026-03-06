@@ -85,10 +85,11 @@ interface Props {
   usageCount: number;
   dailyLimit?: number;
   userId?: string;
+  accessToken?: string;
 }
 
 export default function GeneratorForm({
-  onResult, onLoading, onLimitReached, usageCount, dailyLimit = 5, userId,
+  onResult, onLoading, onLimitReached, usageCount, dailyLimit = 5, userId, accessToken,
 }: Props) {
   const [prompt, setPrompt] = useState('');
   const [indicatorType, setIndicatorType] = useState('custom');
@@ -130,7 +131,10 @@ export default function GeneratorForm({
     try {
       const res = await fetch('/api/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({ prompt: prompt.trim(), indicatorType, timeframe, userId }),
       });
 

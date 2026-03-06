@@ -46,6 +46,7 @@ export default function GeneratePage() {
   const [usageLoading, setUsageLoading] = useState(true);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [userId, setUserId] = useState<string | undefined>(undefined);
+  const [accessToken, setAccessToken] = useState<string | undefined>(undefined);
   const supabase = getSupabaseClient();
   // Dynamic browser tab title
   useEffect(() => {
@@ -63,6 +64,8 @@ export default function GeneratePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) setAccessToken(session.access_token);
         // Fetch server-side count
         const { data, error } = await supabase.rpc('get_daily_usage', { p_user_id: user.id });
         if (!error && typeof data === 'number') {
@@ -160,6 +163,7 @@ export default function GeneratePage() {
             usageCount={usageCount}
             dailyLimit={DAILY_LIMIT}
             userId={userId}
+            accessToken={accessToken}
           />
         </div>
 

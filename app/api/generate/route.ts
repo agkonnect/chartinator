@@ -109,12 +109,24 @@ async function callClaude(userPrompt: string, fixPrompt?: string): Promise<strin
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { prompt, indicatorType = 'custom', timeframe = 'any', userId } = body as {
+    const { prompt, indicatorType = 'custom', timeframe = 'any' } = body as {
       prompt: string;
       indicatorType?: string;
       timeframe?: string;
-      userId?: string;
     };
+
+    // Extract user from Authorization header (more reliable than passing userId in body)
+    let userId: string | undefined;
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7);
+      try {
+        const { data: { user } } = await getSupabaseAdmin().auth.getUser(token);
+        if (user) userId = user.id;
+      } catch {
+        // Token invalid - treat as unauthenticated
+      }
+    }
 
     // --- Input validation ---
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 10) {
