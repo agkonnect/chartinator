@@ -90,7 +90,7 @@ async function callClaude(userPrompt: string, fixPrompt?: string): Promise<strin
     : [{ role: 'user', content: userPrompt }];
 
   const response = await anthropic.messages.create({
-    model: 'claude-3-5-sonnet-latest',
+    model: 'claude-sonnet-4-6',
     max_tokens: 4096,
     system: MQL5_SYSTEM_PROMPT,
     messages,
