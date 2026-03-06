@@ -26,6 +26,33 @@ const LOADING_MESSAGES = [
   'Almost ready...',
 ];
 
+const QUICK_PROMPTS = [
+  {
+    label: 'RSI Color Zones',
+    prompt: 'RSI indicator with period 14. Paint the line green when below 30, red when above 70, and gray in between. Add horizontal dotted lines at 30 and 70.',
+  },
+  {
+    label: 'EMA Crossover Fill',
+    prompt: 'Two exponential moving averages — a fast 9 EMA and a slow 21 EMA plotted on the price chart. When the fast crosses above the slow, fill the gap between them blue. When the fast crosses below, fill red.',
+  },
+  {
+    label: 'MACD Color Histogram',
+    prompt: 'Classic MACD oscillator with fast 12, slow 26, signal 9. Histogram bars should be dark green when rising above zero, light green when falling above zero, dark red when falling below zero, light red when rising below zero.',
+  },
+  {
+    label: 'Volume Spike Detector',
+    prompt: 'Volume indicator in a sub-window. Color bars bright orange when volume is more than 2x the 20-period average, blue when above average, and gray when below average.',
+  },
+  {
+    label: 'Bollinger Bands Squeeze',
+    prompt: 'Bollinger Bands with period 20 and 2 standard deviations. Add a colored background: light green when the bands are expanding, light red when squeezing (bands narrowing for 3 or more bars).',
+  },
+  {
+    label: 'Stochastic Arrows',
+    prompt: 'Stochastic oscillator K 14, D 3, slowing 3. When K crosses above D below 20, draw a green up arrow on the price chart. When K crosses below D above 80, draw a red down arrow.',
+  },
+];
+
 const INDICATOR_TYPES = [
   { value: 'custom',     label: 'Auto-detect' },
   { value: 'trend',      label: 'Trend (chart window)' },
@@ -148,6 +175,21 @@ export default function GeneratorForm({
         <label className="block text-xs text-[#94a3b8] font-semibold uppercase tracking-wider mb-2">
           Describe your indicator
         </label>
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {QUICK_PROMPTS.map((qp) => (
+            <button
+              key={qp.label}
+              type="button"
+              disabled={loading}
+              onClick={() => { setPrompt(qp.prompt); setError(null); textareaRef.current?.focus(); }}
+              className="px-2.5 py-1 text-xs rounded-lg border border-[#1e3a5f] text-[#64748b]
+                hover:border-[#00D4FF] hover:text-[#00D4FF] hover:bg-[#00D4FF]/5
+                transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {qp.label}
+            </button>
+          ))}
+        </div>
         <textarea
           ref={textareaRef}
           value={prompt}
