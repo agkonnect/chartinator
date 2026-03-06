@@ -51,9 +51,10 @@ export default function CodePreview({ code, indicatorName, valid, warnings = [] 
     const fname = indicatorName
       .replace(/[^a-zA-Z0-9_\-]/g, '_')
       .replace(/_+/g, '_')
-      .slice(0, 64);
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 64) || 'indicator';
     a.href = url;
-    a.download = `${fname || 'indicator'}.mq5`;
+    a.download = `${fname}.mq5`;
     a.click();
     URL.revokeObjectURL(url);
   };
