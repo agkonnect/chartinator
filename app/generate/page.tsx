@@ -45,8 +45,6 @@ export default function GeneratePage() {
   const [usageCount, setUsageCount] = useState(0);
   const [usageLoading, setUsageLoading] = useState(true);
   const [showLimitModal, setShowLimitModal] = useState(false);
-  const [userId, setUserId] = useState<string | undefined>(undefined);
-  const [accessToken, setAccessToken] = useState<string | undefined>(undefined);
   const supabase = getSupabaseClient();
   // Dynamic browser tab title
   useEffect(() => {
@@ -63,9 +61,6 @@ export default function GeneratePage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        setUserId(user.id);
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) setAccessToken(session.access_token);
         // Fetch server-side count
         const { data, error } = await supabase.rpc('get_daily_usage', { p_user_id: user.id });
         if (!error && typeof data === 'number') {
@@ -74,7 +69,6 @@ export default function GeneratePage() {
           setUsageCount(getLocalUsage());
         }
       } else {
-        setUserId(undefined);
         setUsageCount(getLocalUsage());
       }
     } catch {
@@ -93,7 +87,7 @@ export default function GeneratePage() {
   const handleResult = (res: GenerateResult) => {
     setResult(res);
     // Increment usage counter
-    if (!userId) incrementLocalUsage();
+    incrementLocalUsage(); // Also track locally as fallback
     setUsageCount((c) => c + 1);
     // Scroll to result
     setTimeout(() => {
@@ -162,8 +156,6 @@ export default function GeneratePage() {
             onLimitReached={() => setShowLimitModal(true)}
             usageCount={usageCount}
             dailyLimit={DAILY_LIMIT}
-            userId={userId}
-            accessToken={accessToken}
           />
         </div>
 

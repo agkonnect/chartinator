@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { Zap, ChevronDown } from 'lucide-react';
+import { getSupabaseClient } from '@/lib/supabase-client';
 
 const PLACEHOLDERS = [
   'Moving average that turns blue on uptrend, red on downtrend...',
@@ -84,12 +85,10 @@ interface Props {
   onLimitReached: () => void;
   usageCount: number;
   dailyLimit?: number;
-  userId?: string;
-  accessToken?: string;
 }
 
 export default function GeneratorForm({
-  onResult, onLoading, onLimitReached, usageCount, dailyLimit = 5, userId, accessToken,
+  onResult, onLoading, onLimitReached, usageCount, dailyLimit = 5,
 }: Props) {
   const [prompt, setPrompt] = useState('');
   const [indicatorType, setIndicatorType] = useState('custom');
@@ -129,13 +128,18 @@ export default function GeneratorForm({
     onLoading(true);
 
     try {
+      // Get fresh token on each request to avoid staleness
+      const supabase = getSupabaseClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const freshToken = session?.access_token;
+
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
+          ...(freshToken ? { 'Authorization': `Bearer ${freshToken}` } : {}),
         },
-        body: JSON.stringify({ prompt: prompt.trim(), indicatorType, timeframe, userId }),
+        body: JSON.stringify({ prompt: prompt.trim(), indicatorType, timeframe }),
       });
 
       if (res.status === 429) {
