@@ -4,15 +4,3 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
-  timeout = 26
-
-[dev]
-  command = "npm run dev"
-  port = 3000
-
-[build.environment]
-  NODE_VERSION = "20"
