@@ -91,7 +91,7 @@ async function callClaude(userPrompt: string, fixPrompt?: string): Promise<strin
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 4096,
+    max_tokens: 2048,
     system: MQL5_SYSTEM_PROMPT,
     messages,
   });
@@ -141,27 +141,6 @@ export async function POST(req: NextRequest) {
 
     // --- Validate ---
     let validation = validateMQL5Code(code);
-
-    // --- Retry once if hard errors ---
-    if (!validation.valid) {
-      const fixPrompt = [
-        'The MQL5 code you generated has compilation errors. Fix ALL errors listed below and return the corrected complete file. Return ONLY the raw MQL5 code.',
-        '',
-        '--- ORIGINAL CODE ---',
-        code,
-        '--- ERRORS ---',
-        ...validation.errors.map((e) => `• ${e}`),
-        '',
-        'Return the COMPLETE corrected MQL5 file now:',
-      ].join('\n');
-
-      try {
-        code = await callClaude(userPrompt, fixPrompt);
-        validation = validateMQL5Code(code);
-      } catch {
-        // Keep original if retry fails
-      }
-    }
 
     // --- Extract name ---
     const indicatorName = extractIndicatorName(code);
