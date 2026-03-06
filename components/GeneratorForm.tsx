@@ -13,6 +13,19 @@ const PLACEHOLDERS = [
   'Moving average ribbon of 5 EMAs from 8 to 200 periods...',
 ];
 
+const LOADING_MESSAGES = [
+  'Parsing your strategy...',
+  'Writing OnInit()...',
+  'Declaring indicator buffers...',
+  'Crafting OnCalculate() logic...',
+  'Calibrating plot properties...',
+  'Checking for INVALID_HANDLE...',
+  'Optimizing for MetaTrader 5...',
+  'Setting index buffers...',
+  'Running validation pass...',
+  'Almost ready...',
+];
+
 const INDICATOR_TYPES = [
   { value: 'custom',     label: 'Auto-detect' },
   { value: 'trend',      label: 'Trend (chart window)' },
@@ -56,6 +69,7 @@ export default function GeneratorForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [phIdx, setPhIdx] = useState(0);
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Rotate placeholder text
@@ -63,6 +77,14 @@ export default function GeneratorForm({
     const t = setInterval(() => setPhIdx((i) => (i + 1) % PLACEHOLDERS.length), 3500);
     return () => clearInterval(t);
   }, []);
+
+  // Rotate loading messages while generating
+  useEffect(() => {
+    if (!loading) return;
+    setLoadingMsgIdx(0);
+    const t = setInterval(() => setLoadingMsgIdx((i) => (i + 1) % LOADING_MESSAGES.length), 1800);
+    return () => clearInterval(t);
+  }, [loading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,7 +230,7 @@ export default function GeneratorForm({
         {loading ? (
           <>
             <div className="w-4 h-4 border-2 border-[#0a0e1a]/30 border-t-[#0a0e1a] rounded-full animate-spin" />
-            Generating your indicator...
+            {LOADING_MESSAGES[loadingMsgIdx]}
           </>
         ) : (
           <>
