@@ -8,6 +8,7 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+  timeout = 26
 
 [dev]
   command = "npm run dev"
@@ -15,3 +16,10 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+# Prevent CDN caching of API routes
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+    X-Content-Type-Options = "nosniff"

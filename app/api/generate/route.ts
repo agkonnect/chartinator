@@ -179,12 +179,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({
-      code,
-      indicatorName,
-      valid: validation.valid,
-      warnings: [...validation.errors, ...validation.warnings],
-    });
+    return NextResponse.json(
+      { code, indicatorName, valid: validation.valid, warnings: [...validation.errors, ...validation.warnings] },
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
   } catch (err) {
     console.error('/api/generate error:', err);
     const message = err instanceof Error ? err.message : 'Unknown error';

@@ -90,6 +90,15 @@ export default function GeneratorForm({
         return;
       }
 
+      // Guard against HTML error pages (e.g. Netlify timeout returns HTML)
+      const contentType = res.headers.get('content-type') ?? '';
+      if (!contentType.includes('application/json')) {
+        const text = await res.text();
+        console.error('Non-JSON response:', text.slice(0, 200));
+        setError('Request timed out or server error — please try again.');
+        return;
+      }
+
       const data = await res.json();
 
       if (!res.ok) {
