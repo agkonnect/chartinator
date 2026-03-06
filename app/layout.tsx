@@ -1,15 +1,39 @@
 import type { Metadata } from 'next';
 import './globals.css';
 
+const APP_URL = 'https://chartinator.netlify.app';
+
 export const metadata: Metadata = {
-  title: 'Chartinator — AI-Powered MT5 Indicator Generator',
+  metadataBase: new URL(APP_URL),
+  title: {
+    default: 'Chartinator — AI-Powered MT5 Indicator Generator',
+    template: '%s | Chartinator',
+  },
   description:
     'Describe it. Generate it. Trade it. Turn plain English into production-ready MQL5 indicators for MetaTrader 5 — no coding required.',
-  keywords: ['MQL5', 'MetaTrader 5', 'indicator generator', 'AI trading tools', 'MT5 indicators'],
+  keywords: [
+    'MQL5', 'MetaTrader 5', 'MT5 indicator generator', 'AI trading tools',
+    'MQL5 code generator', 'algorithmic trading', 'custom indicators',
+    'MetaTrader indicator builder', 'no-code trading',
+  ],
+  authors: [{ name: 'Chartinator' }],
+  creator: 'Chartinator',
+  robots: { index: true, follow: true },
   openGraph: {
-    title: 'Chartinator',
-    description: 'AI-Powered MT5 Indicator Generator',
     type: 'website',
+    url: APP_URL,
+    siteName: 'Chartinator',
+    title: 'Chartinator — AI-Powered MT5 Indicator Generator',
+    description:
+      'Turn plain English into production-ready MQL5 indicators for MetaTrader 5. No coding required.',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Chartinator' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Chartinator — AI-Powered MT5 Indicator Generator',
+    description:
+      'Turn plain English into production-ready MQL5 indicators for MetaTrader 5. No coding required.',
+    images: ['/opengraph-image'],
   },
 };
 
