@@ -232,15 +232,27 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-[#1e3a5f] py-8">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#475569]">
-          <span>
-            Chart<span className="text-[#00D4FF]">inator</span> — AI-Powered MT5 Indicator Generator
-          </span>
-          <div className="flex gap-5">
-            <Link href="/generate" className="hover:text-[#94a3b8] transition-colors">Generator</Link>
-            <Link href="/dashboard" className="hover:text-[#94a3b8] transition-colors">Dashboard</Link>
-            <Link href="/auth" className="hover:text-[#94a3b8] transition-colors">Sign In</Link>
+      <footer className="relative z-10 border-t border-[#1e3a5f] py-10">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col items-center sm:items-start gap-1">
+              <span className="text-sm font-bold">
+                Chart<span className="text-[#00D4FF]">inator</span>
+              </span>
+              <span className="text-xs text-[#334155]">
+                AI-Powered MT5 Indicator Generator
+              </span>
+            </div>
+            <div className="flex items-center gap-6 text-xs text-[#475569]">
+              <Link href="/generate" className="hover:text-[#94a3b8] transition-colors">Generator</Link>
+              <Link href="/dashboard" className="hover:text-[#94a3b8] transition-colors">Dashboard</Link>
+              <Link href="/auth" className="hover:text-[#94a3b8] transition-colors">Sign In</Link>
+              <a href="https://github.com/agkonnect/chartinator" target="_blank" rel="noopener noreferrer" className="hover:text-[#94a3b8] transition-colors">GitHub</a>
+            </div>
+          </div>
+          <div className="mt-6 pt-6 border-t border-[#1e3a5f]/50 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[#334155]">
+            <span>© 2026 Chartinator. All rights reserved.</span>
+            <span>Powered by <span className="text-[#475569]">Claude AI</span> · Built for MetaTrader 5</span>
           </div>
         </div>
       </footer>
