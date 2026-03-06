@@ -303,6 +303,5 @@ export function buildUserPrompt(
 
   parts.push('Return ONLY the raw MQL5 code file. No markdown. No explanation.');
 
-  return parts.join('
-');
+  return parts.join('\n');
 }

@@ -58,8 +58,7 @@ export default function CodePreview({ code, indicatorName, valid, warnings = [] 
     URL.revokeObjectURL(url);
   };
 
-  const lineCount = code.split('
-').length;
+  const lineCount = code.split('\n').length;
 
   return (
     <div className="animate-fade-in-up">
