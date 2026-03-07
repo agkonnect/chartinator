@@ -82,13 +82,16 @@ interface Props {
   onResult: (result: GenerateResult) => void;
   onLoading: (loading: boolean) => void;
   onLimitReached: () => void;
+  onStream?: (chunk: string) => void;
+  onStreamStart?: () => void;
   usageCount: number;
   dailyLimit?: number;
   initialPrompt?: string;
 }
 
 export default function GeneratorForm({
-  onResult, onLoading, onLimitReached, usageCount, dailyLimit = 5, initialPrompt = '',
+  onResult, onLoading, onLimitReached, onStream, onStreamStart,
+  usageCount, dailyLimit = 5, initialPrompt = '',
 }: Props) {
   const [prompt, setPrompt] = useState(initialPrompt);
   const [indicatorType, setIndicatorType] = useState('custom');
@@ -99,7 +102,6 @@ export default function GeneratorForm({
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Update prompt if initialPrompt changes (e.g. from URL param)
   useEffect(() => {
     if (initialPrompt) {
       setPrompt(initialPrompt);
@@ -107,13 +109,11 @@ export default function GeneratorForm({
     }
   }, [initialPrompt]);
 
-  // Rotate placeholder text
   useEffect(() => {
     const t = setInterval(() => setPhIdx((i) => (i + 1) % PLACEHOLDERS.length), 3500);
     return () => clearInterval(t);
   }, []);
 
-  // Rotate loading messages while generating
   useEffect(() => {
     if (!loading) return;
     setLoadingMsgIdx(0);
@@ -134,6 +134,7 @@ export default function GeneratorForm({
     setError(null);
     setLoading(true);
     onLoading(true);
+    onStreamStart?.();
 
     try {
       const res = await fetch('/api/generate', {
@@ -147,22 +148,62 @@ export default function GeneratorForm({
         return;
       }
 
-      const contentType = res.headers.get('content-type') ?? '';
-      if (!contentType.includes('application/json')) {
-        const text = await res.text();
-        console.error('Non-JSON response:', text.slice(0, 200));
-        setError('Request timed out or server error — please try again.');
+      if (!res.ok || !res.body) {
+        const text = await res.text().catch(() => `HTTP ${res.status}`);
+        setError('Server error — please try again.');
+        console.error('Generate error:', text.slice(0, 300));
         return;
       }
 
-      const data = await res.json();
+      // --- Read SSE stream ---
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-      if (!res.ok) {
-        setError(data.error ?? `Server error (${res.status})`);
-        return;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete SSE lines
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? ''; // keep incomplete last line
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data: ')) continue;
+          const jsonStr = trimmed.slice(6);
+          if (!jsonStr) continue;
+
+          try {
+            const msg = JSON.parse(jsonStr) as {
+              type: string;
+              text?: string;
+              code?: string;
+              indicatorName?: string;
+              valid?: boolean;
+              warnings?: string[];
+              message?: string;
+            };
+
+            if (msg.type === 'chunk' && msg.text) {
+              onStream?.(msg.text);
+            } else if (msg.type === 'done' && msg.code) {
+              onResult({
+                code: msg.code,
+                indicatorName: msg.indicatorName ?? 'MQL5_Indicator',
+                valid: msg.valid ?? true,
+                warnings: msg.warnings ?? [],
+              });
+            } else if (msg.type === 'error') {
+              setError(msg.message ?? 'Generation failed — please try again.');
+            }
+          } catch {
+            // ignore malformed JSON lines
+          }
+        }
       }
-
-      onResult(data as GenerateResult);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Network error — please try again.');
     } finally {
@@ -177,7 +218,6 @@ export default function GeneratorForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Main textarea */}
       <div>
         <label className="block text-xs text-[#94a3b8] font-semibold uppercase tracking-wider mb-2">
           Describe your indicator
@@ -217,7 +257,6 @@ export default function GeneratorForm({
         </div>
       </div>
 
-      {/* Options row */}
       <div className="grid grid-cols-2 gap-3">
         <div className="relative">
           <label className="block text-xs text-[#94a3b8] font-semibold uppercase tracking-wider mb-1.5">
@@ -257,15 +296,13 @@ export default function GeneratorForm({
         </div>
       </div>
 
-      {/* Error */}
       {error && (
         <div className="flex items-start gap-2 p-3 bg-[#ef4444]/10 border border-[#ef4444]/30 rounded-xl text-sm text-[#ef4444]">
-          <span className="mt-0.5">⚠</span>
+          <span className="mt-0.5">&#9888;</span>
           <span>{error}</span>
         </div>
       )}
 
-      {/* Submit */}
       <button
         type="submit"
         disabled={loading || prompt.trim().length < 10}
@@ -284,7 +321,7 @@ export default function GeneratorForm({
         ) : (
           <>
             <Zap size={16} />
-            Generate Indicator ⚡
+            Generate Indicator &#9889;
           </>
         )}
       </button>
