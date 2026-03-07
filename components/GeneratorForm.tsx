@@ -84,12 +84,13 @@ interface Props {
   onLimitReached: () => void;
   usageCount: number;
   dailyLimit?: number;
+  initialPrompt?: string;
 }
 
 export default function GeneratorForm({
-  onResult, onLoading, onLimitReached, usageCount, dailyLimit = 5,
+  onResult, onLoading, onLimitReached, usageCount, dailyLimit = 5, initialPrompt = '',
 }: Props) {
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState(initialPrompt);
   const [indicatorType, setIndicatorType] = useState('custom');
   const [timeframe, setTimeframe] = useState('any');
   const [loading, setLoading] = useState(false);
@@ -97,6 +98,14 @@ export default function GeneratorForm({
   const [phIdx, setPhIdx] = useState(0);
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Update prompt if initialPrompt changes (e.g. from URL param)
+  useEffect(() => {
+    if (initialPrompt) {
+      setPrompt(initialPrompt);
+      setTimeout(() => textareaRef.current?.focus(), 100);
+    }
+  }, [initialPrompt]);
 
   // Rotate placeholder text
   useEffect(() => {
@@ -138,7 +147,6 @@ export default function GeneratorForm({
         return;
       }
 
-      // Guard against HTML error pages (e.g. Netlify timeout returns HTML)
       const contentType = res.headers.get('content-type') ?? '';
       if (!contentType.includes('application/json')) {
         const text = await res.text();

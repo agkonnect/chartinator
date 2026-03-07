@@ -14,7 +14,8 @@ export default function Navbar() {
   const supabase = getSupabaseClient();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+    // getSession() is instant (no network call) — avoids Netlify hang
+    supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) =>
       setUser(session?.user ?? null)
     );
@@ -57,6 +58,7 @@ export default function Navbar() {
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-6">
           {navLink('/generate', 'Generator')}
+          {navLink('/examples', 'Examples')}
           {user && navLink('/dashboard', 'Dashboard')}
         </div>
 
@@ -111,6 +113,7 @@ export default function Navbar() {
       {menuOpen && (
         <div className="md:hidden border-t border-[#1e3a5f] bg-[#0a0e1a] px-4 py-4 space-y-3">
           {navLink('/generate', '⚡ Generator')}
+          {navLink('/examples', '💡 Examples')}
           {user && navLink('/dashboard', '📊 Dashboard')}
           {user ? (
             <button

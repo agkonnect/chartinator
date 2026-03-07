@@ -1,11 +1,12 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import GeneratorForm, { type GenerateResult } from '@/components/GeneratorForm';
 import CodePreview from '@/components/CodePreview';
 import UsageCounter from '@/components/UsageCounter';
 import { getSupabaseClient } from '@/lib/supabase-client';
-import { X, Zap, Lock } from 'lucide-react';
+import { X, Zap, Lock, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 
 const DAILY_LIMIT = 5;
@@ -39,13 +40,18 @@ function incrementLocalUsage() {
   localStorage.setItem(LS_KEY, JSON.stringify({ date: today, count: current + 1 }));
 }
 
-export default function GeneratePage() {
+function GeneratePageInner() {
+  const searchParams = useSearchParams();
+  const urlPrompt = searchParams.get('prompt') ?? '';
+
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [usageCount, setUsageCount] = useState(0);
   const [usageLoading, setUsageLoading] = useState(true);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const formRef = useState<HTMLDivElement | null>(null);
   const supabase = getSupabaseClient();
+
   // Dynamic browser tab title
   useEffect(() => {
     document.title = result?.indicatorName
@@ -54,12 +60,10 @@ export default function GeneratePage() {
     return () => { document.title = 'Chartinator — AI-Powered MT5 Indicator Generator'; };
   }, [result]);
 
-
   // Load usage on mount
   const loadUsage = useCallback(async () => {
     setUsageLoading(true);
     try {
-      // getSession() is instant (reads from cookies/localStorage, no network call)
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         const { data, error } = await supabase.rpc('get_daily_usage', { p_user_id: session.user.id });
@@ -89,7 +93,6 @@ export default function GeneratePage() {
     incrementLocalUsage();
     setUsageCount((c) => c + 1);
 
-    // Save to Supabase directly from browser (avoids server-side auth complexity)
     try {
       const sb = getSupabaseClient();
       const { data: { session } } = await sb.auth.getSession();
@@ -107,7 +110,6 @@ export default function GeneratePage() {
           }),
           sb.from('usage_logs').insert({ user_id: uid }),
         ]);
-        // Refresh accurate count from DB
         const { data: usageData } = await sb.rpc('get_daily_usage', { p_user_id: uid });
         if (typeof usageData === 'number') setUsageCount(usageData);
       }
@@ -118,6 +120,13 @@ export default function GeneratePage() {
     setTimeout(() => {
       document.getElementById('code-result')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
+  };
+
+  const handleRegenerate = () => {
+    setResult(null);
+    setTimeout(() => {
+      document.getElementById('generator-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   };
 
   return (
@@ -136,7 +145,7 @@ export default function GeneratePage() {
             </div>
             <h2 className="text-xl font-bold text-white mb-2">Daily limit reached</h2>
             <p className="text-[#94a3b8] text-sm mb-6 leading-relaxed">
-              You've used all {DAILY_LIMIT} free generations for today.
+              You&apos;ve used all {DAILY_LIMIT} free generations for today.
               Sign in to get {DAILY_LIMIT} more free uses every day — saved to your dashboard.
             </p>
             <div className="flex flex-col gap-2">
@@ -174,13 +183,14 @@ export default function GeneratePage() {
         </div>
 
         {/* Form card */}
-        <div className="bg-[#111827] border border-[#1e3a5f] rounded-2xl p-6 mb-6 shadow-card">
+        <div id="generator-form" className="bg-[#111827] border border-[#1e3a5f] rounded-2xl p-6 mb-6 shadow-card">
           <GeneratorForm
             onResult={handleResult}
             onLoading={setLoading}
             onLimitReached={() => setShowLimitModal(true)}
             usageCount={usageCount}
             dailyLimit={DAILY_LIMIT}
+            initialPrompt={urlPrompt}
           />
         </div>
 
@@ -215,6 +225,16 @@ export default function GeneratePage() {
               valid={result.valid}
               warnings={result.warnings}
             />
+            {/* Regenerate button */}
+            <div className="mt-4 pt-4 border-t border-[#1e3a5f] flex justify-center">
+              <button
+                onClick={handleRegenerate}
+                className="flex items-center gap-2 text-sm text-[#94a3b8] hover:text-white border border-[#1e3a5f] hover:border-[#00D4FF]/40 px-5 py-2.5 rounded-xl transition-all"
+              >
+                <RefreshCw size={14} />
+                Try a different prompt
+              </button>
+            </div>
           </div>
         )}
 
@@ -235,5 +255,17 @@ export default function GeneratePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function GeneratePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0a0e1a] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#1e3a5f] border-t-[#00D4FF] rounded-full animate-spin" />
+      </div>
+    }>
+      <GeneratePageInner />
+    </Suspense>
   );
 }

@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Zap, BarChart2, Clock } from 'lucide-react';
+import { Zap, BarChart2, Clock, Search } from 'lucide-react';
 import IndicatorHistory, { type IndicatorRecord } from '@/components/IndicatorHistory';
 import UsageCounter from '@/components/UsageCounter';
 import Navbar from '@/components/Navbar';
@@ -14,12 +14,12 @@ export default function DashboardClient() {
   const [userEmail, setUserEmail] = useState('');
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
   const router = useRouter();
   const supabase = getSupabaseClient();
 
   useEffect(() => {
     async function init() {
-      // Use getSession() for instant local read, no network call needed
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
         router.replace('/auth?redirect=/dashboard');
@@ -28,7 +28,6 @@ export default function DashboardClient() {
       const user = session.user;
       setUserEmail(user.email ?? '');
 
-      // Fetch indicators
       const { data: inds } = await supabase
         .from('indicators')
         .select('id,name,description,indicator_type,timeframe,code,is_valid,created_at')
@@ -37,7 +36,6 @@ export default function DashboardClient() {
         .limit(100);
       setIndicators(inds ?? []);
 
-      // Fetch usage
       const { data: usageData } = await supabase
         .rpc('get_daily_usage', { p_user_id: user.id });
       setUsage(typeof usageData === 'number' ? usageData : 0);
@@ -56,6 +54,22 @@ export default function DashboardClient() {
       setDeleting(null);
     }
   };
+
+  const handleRename = async (id: string, newName: string) => {
+    await supabase.from('indicators').update({ name: newName }).eq('id', id);
+    setIndicators((prev) =>
+      prev.map((ind) => ind.id === id ? { ...ind, name: newName } : ind)
+    );
+  };
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return indicators;
+    const q = search.toLowerCase();
+    return indicators.filter((ind) =>
+      ind.name.toLowerCase().includes(q) ||
+      (ind.description ?? '').toLowerCase().includes(q)
+    );
+  }, [indicators, search]);
 
   if (loading) {
     return (
@@ -85,8 +99,9 @@ export default function DashboardClient() {
             </Link>
           </div>
         </div>
+
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-3 gap-4 mb-6">
           {[
             { icon: <BarChart2 size={18} className="text-[#00D4FF]" />, label: 'Total Generated', value: indicators.length },
             { icon: <Zap size={18} className="text-[#10b981]" />, label: 'Used Today', value: usage },
@@ -101,8 +116,32 @@ export default function DashboardClient() {
             </div>
           ))}
         </div>
+
+        {/* Search bar */}
+        {indicators.length > 0 && (
+          <div className="relative mb-6">
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#475569]" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search indicators by name..."
+              className="w-full bg-[#111827] border border-[#1e3a5f] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#e2e8f0] placeholder-[#334155] focus:outline-none focus:border-[#00D4FF] transition-colors"
+            />
+            {search && (
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#475569]">
+                {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Indicator grid */}
-        <IndicatorHistory indicators={indicators} onDelete={handleDelete} />
+        <IndicatorHistory
+          indicators={filtered}
+          onDelete={handleDelete}
+          onRename={handleRename}
+        />
       </div>
     </div>
   );

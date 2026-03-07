@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Download, Trash2, Code2, Clock, ChevronDown, ChevronUp, X, Copy, Check } from 'lucide-react';
+import { Download, Trash2, Code2, Clock, X, Copy, Check, Pencil } from 'lucide-react';
 
 export interface IndicatorRecord {
   id: string;
@@ -16,6 +16,7 @@ export interface IndicatorRecord {
 interface Props {
   indicators: IndicatorRecord[];
   onDelete: (id: string) => void;
+  onRename: (id: string, newName: string) => void;
 }
 
 function formatDate(iso: string) {
@@ -82,16 +83,31 @@ function CodeModal({ record, onClose }: { record: IndicatorRecord; onClose: () =
   );
 }
 
-export default function IndicatorHistory({ indicators, onDelete }: Props) {
+export default function IndicatorHistory({ indicators, onDelete, onRename }: Props) {
   const [viewCode, setViewCode] = useState<IndicatorRecord | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
 
   function copyCode(code: string, id: string) {
     navigator.clipboard.writeText(code).then(() => {
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
     });
+  }
+
+  function startEdit(ind: IndicatorRecord) {
+    setEditingId(ind.id);
+    setEditName(ind.name);
+  }
+
+  function commitEdit(id: string) {
+    const trimmed = editName.trim();
+    if (trimmed && trimmed !== indicators.find(i => i.id === id)?.name) {
+      onRename(id, trimmed);
+    }
+    setEditingId(null);
   }
 
   if (indicators.length === 0) {
@@ -125,7 +141,30 @@ export default function IndicatorHistory({ indicators, onDelete }: Props) {
             {/* Header */}
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-white text-sm truncate">{ind.name}</h3>
+                {editingId === ind.id ? (
+                  <input
+                    autoFocus
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onBlur={() => commitEdit(ind.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitEdit(ind.id);
+                      if (e.key === 'Escape') setEditingId(null);
+                    }}
+                    className="w-full bg-[#1a2235] border border-[#00D4FF]/40 rounded-lg px-2 py-1 text-sm font-bold text-white focus:outline-none"
+                  />
+                ) : (
+                  <div className="flex items-center gap-1.5 group">
+                    <h3 className="font-bold text-white text-sm truncate">{ind.name}</h3>
+                    <button
+                      onClick={() => startEdit(ind)}
+                      className="opacity-0 group-hover:opacity-100 p-0.5 text-[#475569] hover:text-[#00D4FF] transition-all flex-shrink-0"
+                      title="Rename"
+                    >
+                      <Pencil size={11} />
+                    </button>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs px-2 py-0.5 rounded-full bg-[#1a2235] text-[#94a3b8] capitalize">
                     {ind.indicator_type}
