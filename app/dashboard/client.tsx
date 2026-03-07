@@ -20,29 +20,54 @@ export default function DashboardClient() {
 
   useEffect(() => {
     async function init() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        router.replace('/auth?redirect=/dashboard');
-        return;
+      try {
+        // 1. Check session — instant from localStorage
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+          router.replace('/auth?redirect=/dashboard');
+          return;
+        }
+        const user = session.user;
+        setUserEmail(user.email ?? '');
+
+        // 2. Fetch indicators with timeout
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 8000);
+          const { data: inds } = await supabase
+            .from('indicators')
+            .select('id,name,description,indicator_type,timeframe,code,is_valid,created_at')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(100)
+            .abortSignal(controller.signal);
+          clearTimeout(timer);
+          setIndicators(inds ?? []);
+        } catch (e) {
+          console.error('Failed to load indicators:', e);
+          setIndicators([]);
+        }
+
+        // 3. Fetch usage with timeout
+        try {
+          const { data: usageData } = await Promise.race([
+            supabase.rpc('get_daily_usage', { p_user_id: user.id }),
+            new Promise<{ data: null }>((resolve) => setTimeout(() => resolve({ data: null }), 5000)),
+          ]);
+          setUsage(typeof usageData === 'number' ? usageData : 0);
+        } catch (e) {
+          console.error('Failed to load usage:', e);
+          setUsage(0);
+        }
+      } catch (e) {
+        console.error('Dashboard init error:', e);
+      } finally {
+        setLoading(false);
       }
-      const user = session.user;
-      setUserEmail(user.email ?? '');
-
-      const { data: inds } = await supabase
-        .from('indicators')
-        .select('id,name,description,indicator_type,timeframe,code,is_valid,created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(100);
-      setIndicators(inds ?? []);
-
-      const { data: usageData } = await supabase
-        .rpc('get_daily_usage', { p_user_id: user.id });
-      setUsage(typeof usageData === 'number' ? usageData : 0);
-
-      setLoading(false);
     }
+
     init();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDelete = async (id: string) => {
