@@ -59,10 +59,10 @@ export default function GeneratePage() {
   const loadUsage = useCallback(async () => {
     setUsageLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Fetch server-side count
-        const { data, error } = await supabase.rpc('get_daily_usage', { p_user_id: user.id });
+      // getSession() is instant (reads from cookies/localStorage, no network call)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data, error } = await supabase.rpc('get_daily_usage', { p_user_id: session.user.id });
         if (!error && typeof data === 'number') {
           setUsageCount(data);
         } else {
