@@ -1,6 +1,6 @@
 'use client';
-import { useState } from 'react';
-import { Download, Trash2, Code2, Clock, ChevronDown, ChevronUp, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Download, Trash2, Code2, Clock, ChevronDown, ChevronUp, X, Copy, Check } from 'lucide-react';
 
 export interface IndicatorRecord {
   id: string;
@@ -34,6 +34,15 @@ function downloadCode(code: string, name: string) {
 }
 
 function CodeModal({ record, onClose }: { record: IndicatorRecord; onClose: () => void }) {
+  const [copiedModal, setCopiedModal] = React.useState(false);
+
+  function copyCode() {
+    navigator.clipboard.writeText(record.code).then(() => {
+      setCopiedModal(true);
+      setTimeout(() => setCopiedModal(false), 2000);
+    });
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
@@ -46,6 +55,12 @@ function CodeModal({ record, onClose }: { record: IndicatorRecord; onClose: () =
             <p className="text-xs text-[#475569] mt-0.5">{formatDate(record.created_at)}</p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={copyCode}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-[#1a2235] border border-[#1e3a5f] text-[#94a3b8] hover:text-white font-semibold rounded-lg hover:border-[#00D4FF]/40 transition-all"
+            >
+              {copiedModal ? <><Check size={12} className="text-[#10b981]" />Copied!</> : <><Copy size={12} />Copy Code</>}
+            </button>
             <button
               onClick={() => downloadCode(record.code, record.name)}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-[#00D4FF] text-[#0a0e1a] font-bold rounded-lg hover:bg-[#00b8d9] transition-colors"
@@ -70,6 +85,14 @@ function CodeModal({ record, onClose }: { record: IndicatorRecord; onClose: () =
 export default function IndicatorHistory({ indicators, onDelete }: Props) {
   const [viewCode, setViewCode] = useState<IndicatorRecord | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  function copyCode(code: string, id: string) {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  }
 
   if (indicators.length === 0) {
     return (
@@ -137,6 +160,12 @@ export default function IndicatorHistory({ indicators, onDelete }: Props) {
                 className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2 rounded-lg border border-[#1e3a5f] text-[#94a3b8] hover:text-white hover:border-[#00D4FF]/40 transition-all"
               >
                 <Code2 size={12} />View Code
+              </button>
+              <button
+                onClick={() => copyCode(ind.code, ind.id)}
+                className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2 rounded-lg border border-[#1e3a5f] text-[#94a3b8] hover:text-white hover:border-[#00D4FF]/40 transition-all"
+              >
+                {copiedId === ind.id ? <><Check size={12} className="text-[#10b981]" />Copied!</> : <><Copy size={12} />Copy</>}
               </button>
               <button
                 onClick={() => downloadCode(ind.code, ind.name)}
