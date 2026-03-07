@@ -84,12 +84,37 @@ export default function GeneratePage() {
     return () => subscription.unsubscribe();
   }, [supabase, loadUsage]);
 
-  const handleResult = (res: GenerateResult) => {
+  const handleResult = async (res: GenerateResult) => {
     setResult(res);
-    // Increment usage counter
-    incrementLocalUsage(); // Also track locally as fallback
+    incrementLocalUsage();
     setUsageCount((c) => c + 1);
-    // Scroll to result
+
+    // Save to Supabase directly from browser (avoids server-side auth complexity)
+    try {
+      const sb = getSupabaseClient();
+      const { data: { session } } = await sb.auth.getSession();
+      if (session?.user) {
+        const uid = session.user.id;
+        await Promise.all([
+          sb.from('indicators').insert({
+            user_id: uid,
+            name: res.indicatorName || 'Untitled',
+            description: '',
+            indicator_type: 'custom',
+            timeframe: 'any',
+            code: res.code,
+            is_valid: res.valid,
+          }),
+          sb.from('usage_logs').insert({ user_id: uid }),
+        ]);
+        // Refresh accurate count from DB
+        const { data: usageData } = await sb.rpc('get_daily_usage', { p_user_id: uid });
+        if (typeof usageData === 'number') setUsageCount(usageData);
+      }
+    } catch (e) {
+      console.error('Client-side save failed:', e);
+    }
+
     setTimeout(() => {
       document.getElementById('code-result')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);

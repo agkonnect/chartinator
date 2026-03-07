@@ -19,12 +19,13 @@ export default function DashboardClient() {
 
   useEffect(() => {
     async function init() {
-      // Check auth client-side
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // Use getSession() for instant local read, no network call needed
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
         router.replace('/auth?redirect=/dashboard');
         return;
       }
+      const user = session.user;
       setUserEmail(user.email ?? '');
 
       // Fetch indicators
